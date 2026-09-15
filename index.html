@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MetaTrader 5 Ultimate Pro Web Simulator</title>
+    <style>
+        :root {
+            --bg-main: #0b0e14;
+            --panel-bg: #131722;
+            --panel-header: #1e222d;
+            --border-color: #2a2e39;
+            --text-main: #d1d4dc;
+            --text-muted: #787b86;
+            --bull-green: #089981;
+            --bull-hover: #067a67;
+            --bear-red: #f23645;
+            --bear-hover: #cc2d3b;
+            --accent-blue: #2962ff;
+            --gold: #f0b90b;
+            --purple: #9c27b0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-size: 11px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Menu & Toolbars */
+        #top-navbar {
+            background-color: var(--panel-header);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+
+        .menu-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 4px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            background: #171b26;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .menu-bar::-webkit-scrollbar, .toolbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .menu-bar .brand {
+            font-weight: bold;
+            font-size: 13px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .menu-bar .brand span { color: var(--accent-blue); }
+
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            overflow-x: auto;
+            white-space: nowrap;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .tool-group {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            border-right: 1px solid var(--border-color);
+            padding-right: 6px;
+            margin-right: 2px;
+            flex-shrink: 0;
+        }
+
+        button, select, input {
+            background: #2a2e39;
+            color: var(--text-main);
+            border: 1px solid #363a45;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        button:hover { background: #363a45; }
+        button:active { transform: scale(0.98); }
+        button.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #fff;
+        }
+
+        .btn-tutorial {
+            background: var(--gold) !important;
+            color: #000 !important;
+            font-weight: bold;
+            border: none;
+            padding: 3px 10px;
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+        .btn-tutorial:hover { background: #d4a307 !important; }
+
+        /* App Grid Layout for Desktop */
+        #app-grid {
+            display: grid;
+            grid-template-columns: 240px 1fr 280px;
+            grid-template-rows: 1fr 220px;
+            flex: 1;
+            width: 100vw;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel-box {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            background-color: var(--panel-header);
+            padding: 6px 10px;
+            font-weight: bold;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        /* Market Watch Sidebar */
+        #market-watch-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .symbol-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 8px 10px;
+            border-bottom: 1px solid #1e222d;
+            cursor: pointer;
+            align-items: center;
+        }
+
+        .symbol-card:hover, .symbol-card.selected {
+            background-color: #2a2e39;
+        }
+
+        .symbol-name { font-weight: bold; color: #fff; }
+        .price-up { color: var(--bull-green); }
+        .price-down { color: var(--bear-red); }
+
+        /* News Ticker */
+        #news-ticker {
+            height: 65px;
+            border-top: 1px solid var(--border-color);
+            padding: 6px 10px;
+            background: #171b26;
+            font-size: 10px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .news-item {
+            margin-bottom: 4px;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        .news-high { color: var(--bear-red); font-weight: bold; }
+
+        /* Chart Area */
+        #chart-container {
+            position: relative;
+            grid-column: 2 / 3;
+            grid-row: 1 / 2;
+            background-color: var(--bg-main);
+            overflow: hidden;
+            min-height: 150px;
+            width: 100%;
+            height: 100%;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Quick Trade Overlay Widget */
+        #quick-trade-bar {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(19, 23, 34, 0.92);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 6px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+
+        .btn-quick-sell {
+            background: var(--bear-red);
+            color: white;
+            border: none;
+            font-weight: bold;
+            padding: 6px 10px;
+            border-radius: 3px;
+        }
+
+        .btn-quick-buy {
+            background: var(--bull-green);
+            color: white;
+            border: none;
+            font-weight: bold;
+            padding: 6px 10px;
+            border-radius: 3px;
+        }
+
+        .btn-quick-sell:hover { background: var(--bear-hover); }
+        .btn-quick-buy:hover { background: var(--bull-hover); }
+
+        /* Depth of Market (DOM) Widget */
+        #dom-overlay {
+            position: absolute;
+            top: 55px;
+            left: 10px;
+            background: rgba(19, 23, 34, 0.92);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            width: 130px;
+            padding: 4px;
+            z-index: 9;
+        }
+
+        .dom-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            padding: 2px 4px;
+        }
+
+        .dom-bar-ask { background: rgba(242, 54, 69, 0.25); }
+        .dom-bar-bid { background: rgba(8, 153, 129, 0.25); }
+
+        /* Order Panel */
+        #order-panel {
+            grid-column: 3 / 4;
+            grid-row: 1 / 2;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+        }
+
+        .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-row label {
+            color: var(--text-muted);
+            font-size: 10px;
+        }
+
+        .form-row input, .form-row select {
+            width: 100%;
+            padding: 6px;
+        }
+
+        .risk-calc-box {
+            background: #171b26;
+            border: 1px dashed var(--border-color);
+            padding: 8px;
+            border-radius: 3px;
+            font-size: 10px;
+        }
+
+        /* Terminal Panel */
+        #terminal-panel {
+            grid-column: 1 / 4;
+            grid-row: 2 / 3;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .terminal-tabs {
+            display: flex;
+            background: #171b26;
+            border-bottom: 1px solid var(--border-color);
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .tab-btn {
+            padding: 6px 14px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-right: 1px solid var(--border-color);
+            border-radius: 0;
+            flex-shrink: 0;
+        }
+
+        .tab-btn.active {
+            background: var(--panel-bg);
+            color: #fff;
+            border-top: 2px solid var(--accent-blue);
+        }
+
+        .terminal-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            min-width: 500px;
+        }
+
+        th {
+            background: #171b26;
+            color: var(--text-muted);
+            padding: 6px 8px;
+            font-weight: normal;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #1e222d;
+        }
+
+        .badge {
+            padding: 2px 5px;
+            border-radius: 2px;
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .badge-buy { background: rgba(8,153,129,0.2); color: var(--bull-green); }
+        .badge-sell { background: rgba(242,54,69,0.2); color: var(--bear-red); }
+
+        /* Account Status Bar */
+        #account-bar {
+            background-color: #171b26;
+            border-top: 1px solid var(--border-color);
+            padding: 6px 10px;
+            display: flex;
+            gap: 15px;
+            font-weight: bold;
+            overflow-x: auto;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        /* Floating Tooltip HUD */
+        #chart-hud {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.75);
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Mobile Bottom Tab Navigation */
+        #mobile-nav-bar {
+            display: none;
+            background: #171b26;
+            border-top: 1px solid var(--border-color);
+            height: 50px;
+            grid-template-columns: repeat(4, 1fr);
+            z-index: 500;
+            flex-shrink: 0;
+        }
+
+        .mobile-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            background: transparent;
+            border: none;
+            border-radius: 0;
+            font-size: 10px;
+            gap: 3px;
+        }
+
+        .mobile-nav-item.active {
+            color: var(--accent-blue);
+            background: rgba(41, 98, 255, 0.1);
+        }
+
+        /* Interactive Tutorial Overlay */
+        #tutorial-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.65);
+            z-index: 1000;
+        }
+
+        .tutorial-card {
+            position: absolute;
+            background: var(--panel-header);
+            border: 2px solid var(--gold);
+            border-radius: 6px;
+            padding: 16px;
+            width: 300px;
+            max-width: 90vw;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            color: #fff;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+
+        .tutorial-card h3 {
+            color: var(--gold);
+            font-size: 13px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .tutorial-card p {
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--text-main);
+            margin-bottom: 12px;
+        }
+
+        .tutorial-buttons {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tutorial-spotlight {
+            position: absolute;
+            border: 2px solid var(--gold);
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 999;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.7);
+        }
+
+        /* ==================== RESPONSIVE MEDIA QUERIES ==================== */
+
+        /* Tablets & Small Laptops (768px to 1024px) */
+        @media (max-width: 1024px) and (min-width: 769px) {
+            #app-grid {
+                grid-template-columns: 200px 1fr;
+                grid-template-rows: 1fr 200px;
+            }
+
+            #order-panel {
+                grid-column: 1 / 2;
+                grid-row: 2 / 3;
+                border-top: 1px solid var(--border-color);
+            }
+
+            #terminal-panel {
+                grid-column: 2 / 3;
+                grid-row: 2 / 3;
+            }
+        }
+
+        /* Mobile Devices (< 768px) */
+        @media (max-width: 768px) {
+            #mobile-nav-bar {
+                display: grid;
+            }
+
+            #app-grid {
+                display: block;
+                height: calc(100vh - 75px - 50px);
+                height: calc(100dvh - 75px - 50px);
+                position: relative;
+            }
+
+            .panel-box, #chart-container {
+                display: none !important;
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                top: 0;
+                left: 0;
+            }
+
+            /* Display Active Tab on Mobile */
+            .panel-box.mobile-active, #chart-container.mobile-active {
+                display: flex !important;
+                flex-direction: column;
+            }
+
+            #quick-trade-bar {
+                top: 5px;
+                left: 5px;
+                padding: 4px;
+                gap: 4px;
+            }
+
+            #quick-trade-bar input {
+                width: 40px !important;
+            }
+
+            #dom-overlay {
+                display: none; /* Hide DOM overlay on phones to clear canvas area */
+            }
+
+            #chart-hud {
+                font-size: 9px;
+                padding: 2px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Navigation Toolbar -->
+    <div id="top-navbar">
+        <div class="menu-bar">
+            <div class="brand">MT5 <span>PRO</span></div>
+            <div>File</div><div>View</div><div>Insert</div><div>Charts</div><div>Tools</div>
+            <button class="btn-tutorial" onclick="startTutorial()">🎓 Tutorial</button>
+            <div style="margin-left: 10px; color: var(--gold);" id="server-ping">● 12ms</div>
+        </div>
+        <div class="toolbar">
+            <div class="tool-group" id="tbar-tf">
+                <button class="active" onclick="setTimeframe(this, 'M1')">M1</button>
+                <button onclick="setTimeframe(this, 'M5')">M5</button>
+                <button onclick="setTimeframe(this, 'M15')">M15</button>
+                <button onclick="setTimeframe(this, 'H1')">H1</button>
+                <button onclick="setTimeframe(this, 'H4')">H4</button>
+                <button onclick="setTimeframe(this, 'D1')">D1</button>
+            </div>
+
+            <div class="tool-group" id="tbar-type">
+                <button class="active" id="btn-candles" onclick="setChartStyle('candles')">Candles</button>
+                <button id="btn-line" onclick="setChartStyle('line')">Line</button>
+                <button id="btn-heikin" onclick="setChartStyle('heikin')">Heikin-Ashi</button>
+            </div>
+
+            <div class="tool-group" id="tbar-tools">
+                <button id="btn-tool-cursor" class="active" onclick="setDrawingTool('cursor')">Pointer</button>
+                <button id="btn-tool-cross" onclick="setDrawingTool('crosshair')">Crosshair</button>
+                <button id="btn-tool-line" onclick="setDrawingTool('trendline')">Trendline</button>
+            </div>
+
+            <div class="tool-group" id="tbar-inds">
+                <button id="btn-ind-sma" class="active" onclick="toggleIndicator('sma')">SMA (20)</button>
+                <button id="btn-ind-rsi" onclick="toggleIndicator('rsi')">RSI</button>
+            </div>
+
+            <div class="tool-group">
+                <button style="background: var(--purple); color:#fff;" onclick="triggerNewsEvent()">💥 News</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <div id="app-grid">
+
+        <!-- Left Panel: Market Watch & News -->
+        <div class="panel-box mobile-active" id="mw-panel-box">
+            <div class="panel-title">
+                <span>Market Watch</span>
+                <span id="market-time">00:00:00</span>
+            </div>
+            <div id="market-watch-list"></div>
+
+            <div class="panel-title">Economic News</div>
+            <div id="news-ticker">
+                <div class="news-item"><span class="news-high">[HIGH]</span> US FED Interest Rate Decision</div>
+                <div class="news-item"><span>[MED]</span> EUR CPI Inflation Released</div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Interactive Chart Canvas -->
+        <div id="chart-container" class="mobile-active">
+            <div id="quick-trade-bar">
+                <button class="btn-quick-sell" onclick="quickTrade('SELL')">SELL <span id="qt-sell-val">0.00</span></button>
+                <input type="number" id="qt-lot-val" value="0.10" step="0.01">
+                <button class="btn-quick-buy" onclick="quickTrade('BUY')">BUY <span id="qt-buy-val">0.00</span></button>
+            </div>
+
+            <div id="dom-overlay">
+                <div style="font-weight: bold; border-bottom: 1px solid var(--border-color); margin-bottom: 2px;">Depth of Market</div>
+                <div id="dom-list"></div>
+            </div>
+
+            <div id="chart-hud">OHLC Info</div>
+            <canvas id="chartCanvas"></canvas>
+        </div>
+
+        <!-- Right Panel: Order Execution & Risk Calculator -->
+        <div class="panel-box" id="order-panel">
+            <div class="panel-title" style="margin: -10px -10px 0 -10px;">Order Execution</div>
+
+            <div class="form-row">
+                <label>Asset Symbol</label>
+                <select id="ord-symbol" onchange="switchSymbol(this.value)"></select>
+            </div>
+
+            <div class="form-row">
+                <label>Execution Type</label>
+                <select id="ord-type" onchange="togglePendingInputs()">
+                    <option value="MARKET">Market Execution</option>
+                    <option value="BUY_LIMIT">Buy Limit</option>
+                    <option value="SELL_LIMIT">Sell Limit</option>
+                </select>
+            </div>
+
+            <div class="form-row" id="pending-price-row" style="display: none;">
+                <label>Target Entry Price</label>
+                <input type="number" id="ord-target-price" step="0.0001">
+            </div>
+
+            <div class="form-row">
+                <label>Volume (Lots)</label>
+                <input type="number" id="ord-lots" value="0.10" step="0.01" min="0.01" oninput="updateRiskCalc()">
+            </div>
+
+            <div class="form-row">
+                <label>Stop Loss (Price)</label>
+                <input type="number" id="ord-sl" placeholder="0.0000" step="0.0001" oninput="updateRiskCalc()">
+            </div>
+
+            <div class="form-row">
+                <label>Take Profit (Price)</label>
+                <input type="number" id="ord-tp" placeholder="0.0000" step="0.0001" oninput="updateRiskCalc()">
+            </div>
+
+            <div class="risk-calc-box">
+                <div style="font-weight: bold; margin-bottom: 3px; color: var(--gold);">Risk & Margin Analytics</div>
+                <div>Req. Margin: <span id="calc-margin-val">$0.00</span></div>
+                <div>Est. Risk: <span id="calc-risk-val">$0.00 (0.00%)</span></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: auto;">
+                <button style="background: var(--bear-red); color:#fff; font-weight:bold; padding: 10px;" onclick="placeOrder('SELL')">SELL</button>
+                <button style="background: var(--bull-green); color:#fff; font-weight:bold; padding: 10px;" onclick="placeOrder('BUY')">BUY</button>
+            </div>
+        </div>
+
+        <!-- Bottom Panel: Trading Terminal -->
+        <div class="panel-box" id="terminal-panel">
+            <div class="terminal-tabs">
+                <button class="tab-btn active" onclick="setTerminalTab(this, 'positions')">Open Positions</button>
+                <button class="tab-btn" onclick="setTerminalTab(this, 'history')">History</button>
+                <button class="tab-btn" onclick="setTerminalTab(this, 'analytics')">Analytics</button>
+            </div>
+
+            <div class="terminal-content" id="tab-positions">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ticket</th><th>Type</th><th>Volume</th><th>Symbol</th><th>Open Price</th><th>Current Price</th><th>Profit ($)</th><th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-positions"></tbody>
+                </table>
+            </div>
+
+            <div class="terminal-content" id="tab-history" style="display: none;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ticket</th><th>Type</th><th>Volume</th><th>Symbol</th><th>Profit ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-history"></tbody>
+                </table>
+            </div>
+
+            <div class="terminal-content" id="tab-analytics" style="display: none; padding: 10px;">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 8px; text-align: center;">
+                    <div class="risk-calc-box"><div>Trades</div><strong id="st-total-trades">0</strong></div>
+                    <div class="risk-calc-box"><div>Win Rate</div><strong id="st-win-rate" style="color:var(--bull-green)">0.0%</strong></div>
+                    <div class="risk-calc-box"><div>Net Profit</div><strong id="st-net-profit">$0.00</strong></div>
+                </div>
+            </div>
+
+            <div id="account-bar">
+                <div>Balance: <strong id="val-balance">10000.00</strong></div>
+                <div>Equity: <strong id="val-equity">10000.00</strong></div>
+                <div>Margin: <strong id="val-margin">0.00</strong></div>
+                <div>Free Margin: <strong id="val-free-margin">10000.00</strong></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar (<768px View Switcher) -->
+    <div id="mobile-nav-bar">
+        <button class="mobile-nav-item" onclick="switchMobileTab('mw-panel-box', this)">📊 Quotes</button>
+        <button class="mobile-nav-item active" onclick="switchMobileTab('chart-container', this)">📈 Chart</button>
+        <button class="mobile-nav-item" onclick="switchMobileTab('order-panel', this)">⚡ Trade</button>
+        <button class="mobile-nav-item" onclick="switchMobileTab('terminal-panel', this)">💼 Terminal</button>
+    </div>
+
+    <!-- Interactive Tutorial Overlay -->
+    <div id="tutorial-overlay">
+        <div class="tutorial-spotlight" id="tutorial-spotlight"></div>
+        <div class="tutorial-card" id="tutorial-card">
+            <h3 id="tut-title">Tutorial Step</h3>
+            <p id="tut-text">Loading tutorial description...</p>
+            <div class="tutorial-buttons">
+                <button onclick="prevTutorialStep()" id="btn-tut-prev">Back</button>
+                <button onclick="skipTutorial()" style="background:#363a45;">Skip</button>
+                <button onclick="nextTutorialStep()" id="btn-tut-next" style="background:var(--gold); color:#000; font-weight:bold;">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        const AudioFX = {
+            ctx: null,
+            init() { 
+                try {
+                    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); 
+                } catch(e){}
+            },
+            playTone(freq, duration) {
+                try {
+                    this.init();
+                    if (!this.ctx) return;
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e){}
+            },
+            tradeOpen() { this.playTone(880, 0.1); },
+            tradeClose() { this.playTone(440, 0.12); }
+        };
+
+        // --- GLOBAL STATE ---
+        const SYMBOLS = {
+            'EURUSD': { digits: 5, spread: 0.00012, price: 1.08550, contractSize: 100000, volatility: 0.00015 },
+            'GBPUSD': { digits: 5, spread: 0.00018, price: 1.27420, contractSize: 100000, volatility: 0.00022 },
+            'BTCUSD': { digits: 2, spread: 12.0,    price: 67250.00,contractSize: 1,      volatility: 35.0 },
+            'XAUUSD': { digits: 2, spread: 0.25,    price: 2385.40, contractSize: 100,    volatility: 0.85 }
+        };
+
+        let currentSymbol = 'EURUSD';
+        let currentTimeframe = 'M1';
+        let chartStyle = 'candles';
+        let activeTool = 'cursor';
+        const indicators = { sma: true, rsi: false };
+        const rawCandleStore = {};
+
+        const account = {
+            balance: 10000.00,
+            equity: 10000.00,
+            margin: 0.00,
+            freeMargin: 10000.00,
+            leverage: 100
+        };
+
+        let openPositions = [];
+        let tradeHistory = [];
+        let ticketSeq = 1001;
+        let tickCounter = 0;
+        let visibleCandlesCount = 50;
+        let canvas, ctx;
+
+        // --- MOBILE TAB SWITCHER ---
+        function switchMobileTab(panelId, btnEl) {
+            document.querySelectorAll('#mobile-nav-bar .mobile-nav-item').forEach(b => b.classList.remove('active'));
+            if(btnEl) btnEl.classList.add('active');
+
+            document.querySelectorAll('#app-grid > div').forEach(p => p.classList.remove('mobile-active'));
+            const target = document.getElementById(panelId);
+            if(target) target.classList.add('mobile-active');
+
+            if (panelId === 'chart-container') {
+                setTimeout(() => {
+                    resizeCanvas();
+                    drawChart();
+                }, 50);
+            }
+        }
+
+        // --- INITIALIZATION ENGINE ---
+        function initApp() {
+            initHistoricalData();
+            renderMarketWatch();
+            populateSymbolDropdown();
+            setupCanvasEvents();
+            startMarketSimulation();
+            updateAccountAndPositions();
+
+            const resizeObs = new ResizeObserver(() => {
+                resizeCanvas();
+                drawChart();
+            });
+            resizeObs.observe(document.getElementById('chart-container'));
+
+            window.addEventListener('resize', () => {
+                resizeCanvas();
+                drawChart();
+            });
+
+            setTimeout(() => {
+                resizeCanvas();
+                drawChart();
+            }, 200);
+        }
+
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            initApp();
+        } else {
+            document.addEventListener('DOMContentLoaded', initApp);
+        }
+
+        function generateCandles(count, volatility, targetEndPrice) {
+            const list = [];
+            let currentClose = targetEndPrice;
+            for (let i = 0; i < count; i++) {
+                let change = (Math.random() - 0.495) * volatility * 2.2;
+                let open = currentClose - change;
+                let close = currentClose;
+                let high = Math.max(open, close) + Math.abs(Math.random() * volatility * 0.8);
+                let low = Math.min(open, close) - Math.abs(Math.random() * volatility * 0.8);
+                list.unshift({ open, high, low, close });
+                currentClose = open;
+            }
+            return list;
+        }
+
+        function initHistoricalData() {
+            for (let s in SYMBOLS) {
+                rawCandleStore[s] = generateCandles(250, SYMBOLS[s].volatility, SYMBOLS[s].price);
+            }
+        }
+
+        function renderMarketWatch() {
+            const container = document.getElementById('market-watch-list');
+            container.innerHTML = '';
+            for (let key in SYMBOLS) {
+                const sym = SYMBOLS[key];
+                const card = document.createElement('div');
+                card.className = `symbol-card ${key === currentSymbol ? 'selected' : ''}`;
+                card.onclick = () => switchSymbol(key);
+                card.innerHTML = `
+                    <div class="symbol-name">${key}</div>
+                    <div id="mw-bid-${key}">${sym.price.toFixed(sym.digits)}</div>
+                    <div id="mw-ask-${key}" class="price-up">${(sym.price + sym.spread).toFixed(sym.digits)}</div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function populateSymbolDropdown() {
+            const sel = document.getElementById('ord-symbol');
+            sel.innerHTML = '';
+            for (let key in SYMBOLS) {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = key;
+                sel.appendChild(opt);
+            }
+            sel.value = currentSymbol;
+        }
+
+        function switchSymbol(symbolKey) {
+            currentSymbol = symbolKey;
+            document.getElementById('ord-symbol').value = symbolKey;
+            renderMarketWatch();
+            updateRiskCalc();
+            drawChart();
+        }
+
+        function startMarketSimulation() {
+            setInterval(() => {
+                tickCounter++;
+                document.getElementById('market-time').textContent = new Date().toTimeString().split(' ')[0];
+
+                for (let key in SYMBOLS) {
+                    const sym = SYMBOLS[key];
+                    const tick = (Math.random() - 0.496) * sym.volatility;
+                    sym.price = Math.max(0.0001, sym.price + tick);
+
+                    const bidEl = document.getElementById(`mw-bid-${key}`);
+                    const askEl = document.getElementById(`mw-ask-${key}`);
+                    if (bidEl && askEl) {
+                        bidEl.textContent = sym.price.toFixed(sym.digits);
+                        askEl.textContent = (sym.price + sym.spread).toFixed(sym.digits);
+                        bidEl.className = tick >= 0 ? 'price-up' : 'price-down';
+                        askEl.className = tick >= 0 ? 'price-up' : 'price-down';
+                    }
+
+                    const history = rawCandleStore[key];
+                    
+                    if (tickCounter % 12 === 0) {
+                        history.push({
+                            open: sym.price,
+                            high: sym.price,
+                            low: sym.price,
+                            close: sym.price
+                        });
+                        if (history.length > 350) history.shift();
+                    } else {
+                        const last = history[history.length - 1];
+                        last.close = sym.price;
+                        if (sym.price > last.high) last.high = sym.price;
+                        if (sym.price < last.low) last.low = sym.price;
+                    }
+                }
+
+                const activeSym = SYMBOLS[currentSymbol];
+                document.getElementById('qt-sell-val').textContent = activeSym.price.toFixed(activeSym.digits);
+                document.getElementById('qt-buy-val').textContent = (activeSym.price + activeSym.spread).toFixed(activeSym.digits);
+
+                renderDOMOverlay();
+                updateAccountAndPositions();
+                drawChart();
+            }, 300);
+        }
+
+        function renderDOMOverlay() {
+            const domList = document.getElementById('dom-list');
+            const sym = SYMBOLS[currentSymbol];
+            domList.innerHTML = '';
+            for (let i = 2; i >= 1; i--) {
+                const askPrice = sym.price + sym.spread + (i * sym.volatility * 0.3);
+                domList.innerHTML += `<div class="dom-row dom-bar-ask"><span>${askPrice.toFixed(sym.digits)}</span><span>${(Math.random()*2+0.1).toFixed(1)}</span></div>`;
+            }
+            for (let i = 1; i <= 2; i++) {
+                const bidPrice = sym.price - (i * sym.volatility * 0.3);
+                domList.innerHTML += `<div class="dom-row dom-bar-bid"><span>${bidPrice.toFixed(sym.digits)}</span><span>${(Math.random()*2+0.1).toFixed(1)}</span></div>`;
+            }
+        }
+
+        function triggerNewsEvent() {
+            const sym = SYMBOLS[currentSymbol];
+            sym.price += (Math.random() > 0.5 ? 1 : -1) * sym.volatility * 8;
+            AudioFX.playTone(1000, 0.2);
+        }
+
+        function togglePendingInputs() {
+            const type = document.getElementById('ord-type').value;
+            document.getElementById('pending-price-row').style.display = type === 'MARKET' ? 'none' : 'flex';
+        }
+
+        function updateRiskCalc() {
+            const symKey = document.getElementById('ord-symbol').value;
+            const sym = SYMBOLS[symKey];
+            const lots = parseFloat(document.getElementById('ord-lots').value) || 0.01;
+            const sl = parseFloat(document.getElementById('ord-sl').value) || 0;
+
+            const reqMargin = (sym.price * lots * sym.contractSize) / account.leverage;
+            document.getElementById('calc-margin-val').textContent = '$' + reqMargin.toFixed(2);
+
+            if (sl > 0) {
+                const riskAmount = Math.abs(sym.price - sl) * lots * sym.contractSize;
+                const riskPercent = (riskAmount / account.balance) * 100;
+                document.getElementById('calc-risk-val').textContent = `$${riskAmount.toFixed(2)} (${riskPercent.toFixed(1)}%)`;
+            } else {
+                document.getElementById('calc-risk-val').textContent = '$0.00 (0.0%)';
+            }
+        }
+
+        function quickTrade(type) {
+            document.getElementById('ord-type').value = 'MARKET';
+            document.getElementById('ord-lots').value = document.getElementById('qt-lot-val').value;
+            placeOrder(type);
+        }
+
+        function placeOrder(direction) {
+            AudioFX.init();
+            const symKey = document.getElementById('ord-symbol').value;
+            const sym = SYMBOLS[symKey];
+            const lots = parseFloat(document.getElementById('ord-lots').value) || 0.01;
+            const sl = parseFloat(document.getElementById('ord-sl').value) || 0;
+            const tp = parseFloat(document.getElementById('ord-tp').value) || 0;
+
+            const reqMargin = (sym.price * lots * sym.contractSize) / account.leverage;
+            if (reqMargin > account.freeMargin) {
+                alert('Insufficient Margin!');
+                return;
+            }
+
+            const openPrice = direction === 'BUY' ? (sym.price + sym.spread) : sym.price;
+            openPositions.push({
+                id: ticketSeq++,
+                time: new Date().toLocaleTimeString(),
+                symbol: symKey,
+                type: direction,
+                volume: lots,
+                openPrice: openPrice,
+                currentPrice: openPrice,
+                sl: sl,
+                tp: tp,
+                margin: reqMargin,
+                pnl: 0
+            });
+
+            AudioFX.tradeOpen();
+            updateAccountAndPositions();
+        }
+
+        function closePosition(id) {
+            const idx = openPositions.findIndex(p => p.id === id);
+            if (idx !== -1) {
+                const pos = openPositions[idx];
+                account.balance += pos.pnl;
+                tradeHistory.unshift({
+                    ...pos,
+                    closeTime: new Date().toLocaleTimeString()
+                });
+                openPositions.splice(idx, 1);
+                AudioFX.tradeClose();
+                updateAccountAndPositions();
+                renderHistoryTable();
+                updateAnalytics();
+            }
+        }
+
+        function updateAccountAndPositions() {
+            let totalPnL = 0;
+            let totalMargin = 0;
+
+            openPositions.forEach(pos => {
+                const sym = SYMBOLS[pos.symbol];
+                pos.currentPrice = pos.type === 'BUY' ? sym.price : (sym.price + sym.spread);
+                pos.pnl = (pos.type === 'BUY' ? 1 : -1) * (pos.currentPrice - pos.openPrice) * pos.volume * sym.contractSize;
+
+                totalPnL += pos.pnl;
+                totalMargin += pos.margin;
+
+                if (pos.sl > 0 && ((pos.type === 'BUY' && pos.currentPrice <= pos.sl) || (pos.type === 'SELL' && pos.currentPrice >= pos.sl))) {
+                    closePosition(pos.id);
+                }
+            });
+
+            account.equity = account.balance + totalPnL;
+            account.margin = totalMargin;
+            account.freeMargin = account.equity - account.margin;
+
+            document.getElementById('val-balance').textContent = account.balance.toFixed(2);
+            document.getElementById('val-equity').textContent = account.equity.toFixed(2);
+            document.getElementById('val-margin').textContent = account.margin.toFixed(2);
+            document.getElementById('val-free-margin').textContent = account.freeMargin.toFixed(2);
+
+            renderPositionsTable();
+        }
+
+        function renderPositionsTable() {
+            const body = document.getElementById('table-positions');
+            body.innerHTML = '';
+            openPositions.forEach(pos => {
+                const sym = SYMBOLS[pos.symbol];
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${pos.id}</td>
+                    <td><span class="badge ${pos.type === 'BUY'?'badge-buy':'badge-sell'}">${pos.type}</span></td>
+                    <td>${pos.volume.toFixed(2)}</td>
+                    <td>${pos.symbol}</td>
+                    <td>${pos.openPrice.toFixed(sym.digits)}</td>
+                    <td>${pos.currentPrice.toFixed(sym.digits)}</td>
+                    <td class="${pos.pnl>=0?'price-up':'price-down'}"><strong>${pos.pnl.toFixed(2)}</strong></td>
+                    <td><button style="background:var(--bear-red); border:none; color:#fff; padding:2px 6px;" onclick="closePosition(${pos.id})">Close</button></td>
+                `;
+                body.appendChild(row);
+            });
+        }
+
+        function renderHistoryTable() {
+            const body = document.getElementById('table-history');
+            body.innerHTML = '';
+            tradeHistory.forEach(pos => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${pos.id}</td>
+                    <td><span class="badge ${pos.type === 'BUY'?'badge-buy':'badge-sell'}">${pos.type}</span></td>
+                    <td>${pos.volume.toFixed(2)}</td>
+                    <td>${pos.symbol}</td>
+                    <td class="${pos.pnl>=0?'price-up':'price-down'}"><strong>${pos.pnl.toFixed(2)}</strong></td>
+                `;
+                body.appendChild(row);
+            });
+        }
+
+        function updateAnalytics() {
+            const total = tradeHistory.length;
+            if (!total) return;
+            const wins = tradeHistory.filter(t => t.pnl > 0);
+            document.getElementById('st-total-trades').textContent = total;
+            document.getElementById('st-win-rate').textContent = ((wins.length / total) * 100).toFixed(1) + '%';
+            document.getElementById('st-net-profit').textContent = `$${(account.balance - 10000).toFixed(2)}`;
+        }
+
+        function setTerminalTab(btn, tab) {
+            document.querySelectorAll('.terminal-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            ['positions', 'history', 'analytics'].forEach(t => {
+                document.getElementById(`tab-${t}`).style.display = t === tab ? 'block' : 'none';
+            });
+        }
+
+        // --- CANVAS RENDER ENGINE ---
+        function setupCanvasEvents() {
+            canvas = document.getElementById('chartCanvas');
+            ctx = canvas.getContext('2d');
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            const container = document.getElementById('chart-container');
+            if (!container || !canvas) return;
+            canvas.width = Math.max(200, container.clientWidth);
+            canvas.height = Math.max(150, container.clientHeight);
+        }
+
+        function drawChart() {
+            if (!ctx || !canvas) return;
+            const width = canvas.width;
+            const height = canvas.height;
+            const sym = SYMBOLS[currentSymbol];
+            const rawCandles = rawCandleStore[currentSymbol] || [];
+
+            ctx.clearRect(0, 0, width, height);
+
+            const visibleCandles = rawCandles.slice(-visibleCandlesCount);
+            if (visibleCandles.length === 0) return;
+
+            const mainHeight = height - 25;
+            let minPrice = Math.min(...visibleCandles.map(c => c.low));
+            let maxPrice = Math.max(...visibleCandles.map(c => c.high));
+            
+            let range = maxPrice - minPrice;
+            if (range <= 0) range = sym.volatility * 5;
+
+            const pad = range * 0.12;
+            minPrice -= pad;
+            maxPrice += pad;
+            range = maxPrice - minPrice;
+
+            const chartWidth = width - 55;
+            const candleWidth = chartWidth / visibleCandles.length;
+
+            // Grid Lines & Price Scale
+            ctx.strokeStyle = '#1e222d';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                let y = (mainHeight / 4) * i;
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(chartWidth, y); ctx.stroke();
+                let pLabel = maxPrice - ((i / 4) * range);
+                ctx.fillStyle = '#787b86';
+                ctx.fillText(pLabel.toFixed(sym.digits), chartWidth + 3, y + 4);
+            }
+
+            if (chartStyle === 'line') {
+                ctx.strokeStyle = '#2962ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                visibleCandles.forEach((c, i) => {
+                    const x = i * candleWidth + candleWidth / 2;
+                    const y = mainHeight - ((c.close - minPrice) / range) * mainHeight;
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+            } else {
+                visibleCandles.forEach((c, i) => {
+                    const x = i * candleWidth + candleWidth / 2;
+                    let openVal = c.open, closeVal = c.close, highVal = c.high, lowVal = c.low;
+
+                    if (chartStyle === 'heikin') {
+                        closeVal = (c.open + c.high + c.low + c.close) / 4;
+                        openVal = i > 0 ? (visibleCandles[i-1].open + visibleCandles[i-1].close) / 2 : c.open;
+                        highVal = Math.max(c.high, openVal, closeVal);
+                        lowVal = Math.min(c.low, openVal, closeVal);
+                    }
+
+                    let openY = mainHeight - ((openVal - minPrice) / range) * mainHeight;
+                    let closeY = mainHeight - ((closeVal - minPrice) / range) * mainHeight;
+                    let highY = mainHeight - ((highVal - minPrice) / range) * mainHeight;
+                    let lowY = mainHeight - ((lowVal - minPrice) / range) * mainHeight;
+
+                    let isBull = closeVal >= openVal;
+                    let color = isBull ? '#089981' : '#f23645';
+
+                    ctx.strokeStyle = color;
+                    ctx.beginPath();
+                    ctx.moveTo(x, highY);
+                    ctx.lineTo(x, lowY);
+                    ctx.stroke();
+
+                    ctx.fillStyle = color;
+                    let bodyTop = Math.min(openY, closeY);
+                    let bodyHeight = Math.max(1, Math.abs(closeY - openY));
+                    ctx.fillRect(x - (candleWidth * 0.35), bodyTop, candleWidth * 0.7, bodyHeight);
+                });
+            }
+
+            if (indicators.sma && visibleCandles.length > 20) {
+                ctx.strokeStyle = '#f0b90b';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                for (let i = 19; i < visibleCandles.length; i++) {
+                    const slice = visibleCandles.slice(i - 19, i + 1);
+                    const avg = slice.reduce((acc, curr) => acc + curr.close, 0) / 20;
+                    const x = i * candleWidth + candleWidth / 2;
+                    const y = mainHeight - ((avg - minPrice) / range) * mainHeight;
+                    if (i === 19) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+
+            openPositions.filter(p => p.symbol === currentSymbol).forEach(pos => {
+                let posY = mainHeight - ((pos.openPrice - minPrice) / range) * mainHeight;
+                ctx.strokeStyle = pos.type === 'BUY' ? '#089981' : '#f23645';
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.moveTo(0, posY); ctx.lineTo(chartWidth, posY); ctx.stroke(); ctx.setLineDash([]);
+            });
+
+            const lastC = visibleCandles[visibleCandles.length - 1];
+            document.getElementById('chart-hud').textContent = `${currentSymbol} | C: ${lastC.close.toFixed(sym.digits)}`;
+        }
+
+        function setTimeframe(btn, tf) {
+            currentTimeframe = tf;
+            document.querySelectorAll('#tbar-tf button').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            drawChart();
+        }
+
+        function setChartStyle(style) {
+            chartStyle = style;
+            document.querySelectorAll('#tbar-type button').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById(`btn-${style}`);
+            if (btn) btn.classList.add('active');
+            drawChart();
+        }
+
+        function setDrawingTool(tool) {
+            activeTool = tool;
+            document.querySelectorAll('#tbar-tools button').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById(`btn-tool-${tool === 'crosshair' ? 'cross' : tool === 'trendline' ? 'line' : tool}`);
+            if (btn) btn.classList.add('active');
+        }
+
+        function toggleIndicator(ind) {
+            indicators[ind] = !indicators[ind];
+            const btn = document.getElementById(`btn-ind-${ind}`);
+            if (btn) btn.classList.toggle('active', indicators[ind]);
+            drawChart();
+        }
+
+        // --- TUTORIAL ENGINE ---
+        const tutorialSteps = [
+            { title: "Welcome to MT5 Mobile/Desktop", text: "Fully responsive institutional trading platform.", target: null },
+            { title: "Market Watch", text: "Tap or click asset quotes to switch active charts.", target: "#mw-panel-box" },
+            { title: "Real-time Charting", text: "Full canvas chart dynamic layout.", target: "#chart-container" },
+            { title: "Order Panel", text: "Execute market orders or set TP/SL targets.", target: "#order-panel" }
+        ];
+
+        let currentTutStep = 0;
+
+        function startTutorial() {
+            currentTutStep = 0;
+            document.getElementById('tutorial-overlay').style.display = 'block';
+            renderTutorialStep();
+        }
+
+        function renderTutorialStep() {
+            const step = tutorialSteps[currentTutStep];
+            document.getElementById('tut-title').textContent = `${step.title} (${currentTutStep + 1}/${tutorialSteps.length})`;
+            document.getElementById('tut-text').textContent = step.text;
+            document.getElementById('btn-tut-prev').style.display = currentTutStep === 0 ? 'none' : 'inline-block';
+            document.getElementById('btn-tut-next').textContent = currentTutStep === tutorialSteps.length - 1 ? 'Done' : 'Next';
+
+            const card = document.getElementById('tutorial-card');
+            const spotlight = document.getElementById('tutorial-spotlight');
+
+            if (step.target && document.querySelector(step.target) && window.innerWidth > 768) {
+                const rect = document.querySelector(step.target).getBoundingClientRect();
+                spotlight.style.display = 'block';
+                spotlight.style.top = rect.top + 'px';
+                spotlight.style.left = rect.left + 'px';
+                spotlight.style.width = rect.width + 'px';
+                spotlight.style.height = rect.height + 'px';
+
+                card.style.top = Math.min(window.innerHeight - 180, Math.max(20, rect.top + 20)) + 'px';
+                card.style.left = (rect.left > window.innerWidth / 2 ? rect.left - 320 : rect.left + rect.width + 10) + 'px';
+                card.style.transform = 'none';
+            } else {
+                spotlight.style.display = 'none';
+                card.style.top = '50%';
+                card.style.left = '50%';
+                card.style.transform = 'translate(-50%, -50%)';
+            }
+        }
+
+        function nextTutorialStep() {
+            if (currentTutStep < tutorialSteps.length - 1) {
+                currentTutStep++;
+                renderTutorialStep();
+            } else {
+                skipTutorial();
+            }
+        }
+
+        function prevTutorialStep() {
+            if (currentTutStep > 0) {
+                currentTutStep--;
+                renderTutorialStep();
+            }
+        }
+
+        function skipTutorial() {
+            document.getElementById('tutorial-overlay').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
