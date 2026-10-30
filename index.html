@@ -790,6 +790,62 @@
                 const zoomedSh = sh / zoomScale;
                 const zoomedSx = sx + (sw - zoomedSw) / 2;
                 const zoomedSy = sy + (sh - zoomedSh) / 2;
+
+                if (isFrontFacing) {
+                    ctx.translate(w, 0);
+                    ctx.scale(-1, 1);
+                }
+
+                ctx.drawImage(video, zoomedSx, zoomedSy, zoomedSw, zoomedSh, 0, 0, w, h);
+                ctx.restore();
+
+                // Process Pixel Shaders for Filters
+                if (selectedFilter !== 'normal') {
+                    const imgData = ctx.getImageData(0, 0, w, h);
+                    applyShaderFilter(selectedFilter, imgData.data, evCompensation);
+                    ctx.putImageData(imgData, 0, 0);
+                }
+
+                // Render Overlays & Face Tracking
+                updateFaceTracker();
+                renderCuteOverlays(ctx, w, h);
+
+                // Render Live Histogram
+                if (histoCtx) {
+                    renderHistogram(ctx, w, h);
+                }
+            }
+            requestAnimationFrame(renderFrame);
+        }
+
+        // Live Histogram Generator
+        function renderHistogram(sourceCtx, w, h) {
+            const hw = histoCanvas.width = 96;
+            const hh = histoCanvas.height = 48;
+            histoCtx.clearRect(0, 0, hw, hh);
+
+            try {
+                const imgData = sourceCtx.getImageData(0, 0, w, h, { Math: true });
+                const d = imgData.data;
+                const bins = new Array(32).fill(0);
+
+                for (let i = 0; i < d.length; i += 64) {
+                    let lum = Math.floor((0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) / 8);
+                    if (bins[lum] !== undefined) bins[lum]++;
+                }
+
+                const max = Math.max(...bins) || 1;
+                histoCtx.fillStyle = 'rgba(251, 191, 36, 0.7)';
+
+                for (let i = 0; i < 32; i++) {
+                    const bh = (bins[i] / max) * hh;
+                    histoCtx.fillRect(i * 3, hh - bh, 2, bh);
+                }
+            } catch (e) {
+                // Cross-origin fallback
+            }
+        }
+
         // Highly Accurate Human Skin Thermal Sensor Shader Mapping Engine
         function applyShaderFilter(filter, d, ev) {
             const evFactor = Math.pow(2, ev);
