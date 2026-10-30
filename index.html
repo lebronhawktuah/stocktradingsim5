@@ -572,11 +572,12 @@
                 currentStream.getTracks().forEach(t => t.stop());
             }
 
+            // GitHub Pages compatible camera constraints fallback
             const constraints = {
                 video: {
                     facingMode: isFrontFacing ? 'user' : 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 }
+                    width: { ideal: 1280, min: 640 },
+                    height: { ideal: 720, min: 480 }
                 },
                 audio: false
             };
@@ -588,12 +589,29 @@
                 permissionModal.classList.add('hidden');
                 requestAnimationFrame(renderFrame);
             } catch (err) {
-                console.error("Camera access error:", err);
-                permissionModal.classList.remove('hidden');
+                console.warn("Primary camera access error, trying basic constraints:", err);
+                // Fallback for strict browser permissions on GitHub Pages
+                try {
+                    currentStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+                    video.srcObject = currentStream;
+                    await video.play();
+                    permissionModal.classList.add('hidden');
+                    requestAnimationFrame(renderFrame);
+                } catch (fallbackErr) {
+                    console.error("Camera permissions blocked on host:", fallbackErr);
+                    permissionModal.classList.remove('hidden');
+                }
             }
         }
 
         btnStartCamera.addEventListener('click', startCamera);
+
+        // Auto-start camera when page loads on GitHub Pages (HTTPS enabled)
+        window.addEventListener('DOMContentLoaded', () => {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                startCamera();
+            }
+        });
 
         // Controls Bindings
         btnFlip.addEventListener('click', () => {
@@ -756,11 +774,12 @@
         // Render Frame Loop
         function renderFrame() {
             if (video.readyState >= 2) {
-                const vw = video.videoWidth || 1280;
-                const vh = video.videoHeight || 720;
+                const vw = video.videoWidth || 640;
+                const vh = video.videoHeight || 480;
 
-                canvas.width = 720;
-                canvas.height = 960;
+                // Locked canvas resolution for universal cross-browser GitHub Pages rendering
+                canvas.width = 640;
+                canvas.height = 853;
 
                 const w = canvas.width;
                 const h = canvas.height;
@@ -801,9 +820,13 @@
 
                 // Process Pixel Shaders for Filters
                 if (selectedFilter !== 'normal') {
-                    const imgData = ctx.getImageData(0, 0, w, h);
-                    applyShaderFilter(selectedFilter, imgData.data, evCompensation);
-                    ctx.putImageData(imgData, 0, 0);
+                    try {
+                        const imgData = ctx.getImageData(0, 0, w, h);
+                        applyShaderFilter(selectedFilter, imgData.data, evCompensation);
+                        ctx.putImageData(imgData, 0, 0);
+                    } catch (e) {
+                        console.warn("Shader filter context error:", e);
+                    }
                 }
 
                 // Render Overlays & Face Tracking
